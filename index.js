@@ -1,5 +1,6 @@
 const fetch = require("node-fetch")
 const http = require('http')
+const { debug } = require("console")
 const cookies = JSON.parse(process.env.cookies)
 const debugRejoinConversations=false
 const conversations=[
@@ -82,4 +83,4 @@ async function refreshUsers(forceReset) {
     }
 }
 setInterval(refreshUsers,60000)
-refreshUsers(forceReset)
+refreshUsers(debugRejoinConversations)
