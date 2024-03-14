@@ -1,7 +1,8 @@
 const fetch = require("node-fetch")
 const http = require('http')
 const { debug } = require("console")
-const cookies = JSON.parse(process.env.cookies)
+const { join } = require("path")
+const cookies = JSON.parse(process.env.cookies || require('fs').readFileSync('cookies.txt',"utf8"))
 const debugRejoinConversations=false
 const conversations=[
     {id:27615296457,playerCount:2},
@@ -23,11 +24,10 @@ function XsrfRequest(url,opts) {
             //otherwise, just resolve with the Response
             let xsrf = response.headers.get("x-csrf-token")
             if (response.headers.get("x-csrf-token")) {
-                opts.headers = opts.headers || []
                 opts.headers["x-csrf-token"]=xsrf
                 //Retry request with the new xsrf header
-                fetch(url,opts).then(async(response)=>{
-                    resolve(response)
+                fetch(url,opts).then(async(res)=>{
+                    resolve(res)
                 },reject)
             } else {
                 resolve(response)
@@ -62,18 +62,44 @@ async function refreshUsers(forceReset) {
                             {
                                 "Content-Type":"application/json",
                                 Cookie:`.ROBLOSECURITY=${cookie.cookie}`,
-                                body:JSON.stringify({
-                                    "participantUserId": 150264850,
-                                    "conversationId": 27615384184
-                                })
-                            }
+                            },
+                            body:JSON.stringify({
+                                "participantUserId": userId,
+                                "conversationId": conversation.id
+                            })
                             }
                             )   
                         )
                     }
-                    let res = await Promise.all(leavePromises)
-                    for (let response of res) {
-                        response.text().then(console.debug)
+                    await Promise.all(leavePromises)
+                    let joinPromises = []
+                    for (let conversation of conversations) {
+                        if (conversation.playerCount>=cookie.playerId) {
+                            //console.log(conversation.playerCount,cookie.playerId)
+                            joinPromises.push(
+                                XsrfRequest(
+                                    "https://chat.roblox.com/v2/add-to-conversation",
+                                    {
+                                    method:"POST",
+                                    headers:
+                                    {
+                                        "Content-Type":"application/json",
+                                        Cookie:`.ROBLOSECURITY=${cookie.cookie}`,
+                                    },
+                                    body:JSON.stringify({
+                                        "participantUserIds": [
+                                            userId
+                                        ],
+                                        "conversationId": conversation.id
+                                    })
+                                    }
+                                    ) 
+                            )
+                        }
+                    }
+                    let res = await Promise.all(joinPromises)
+                    for (let resp of res) {
+                        //console.log(await resp.text())
                     }
                 } else {
                     console.error("no user id? not authenticated??")
