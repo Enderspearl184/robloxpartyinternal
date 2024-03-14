@@ -1,9 +1,11 @@
 const fetch = require("node-fetch")
 const http = require('http')
-const { debug } = require("console")
-const { join } = require("path")
-const cookies = JSON.parse(process.env.cookies || require('fs').readFileSync('cookies.txt',"utf8"))
-const debugRejoinConversations=false
+const fs = require('fs')
+
+//read from Render environment secret or from a .gitignore-ed file :)
+const cookies = JSON.parse(process.env.cookies || fs.readFileSync('cookies.txt',"utf8"))
+const debugRejoinConversations=true
+
 const conversations=[
     {id:27615296457,playerCount:2},
     {id:27615313032,playerCount:3},
@@ -98,9 +100,7 @@ async function refreshUsers(forceReset) {
                         }
                     }
                     let res = await Promise.all(joinPromises)
-                    for (let resp of res) {
-                        //console.log(await resp.text())
-                    }
+                    console.log("Reset conversations!")
                 } else {
                     console.error("no user id? not authenticated??")
                 }
@@ -110,3 +110,15 @@ async function refreshUsers(forceReset) {
 }
 setInterval(refreshUsers,60000)
 refreshUsers(debugRejoinConversations)
+
+http.createServer(function(req,res) {
+    console.log(req.url)
+    if (req.url=="/") {
+        res.writeHead(200)
+        res.end(fs.readFileSync('./base.html','utf8'))
+        return
+    } else if (req.url=="/main.js") {
+        res.writeHead(200)
+        res.end(fs.readFileSync('./main.js','utf8'))
+    }
+}).listen(80)
