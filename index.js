@@ -188,6 +188,7 @@ http.createServer(async function(req,res) {
                 universe = universe?.data[0]
                 let slotsRequested=universe.maxPlayers
                 if (slotsRequested>maxPlayerCount || slotsRequested<minPlayerCount) {
+                    //slotsRequested=maxPlayerCount
                     res.writeHead(400)
                     res.end(JSON.stringify({
                         success:false,
@@ -198,7 +199,7 @@ http.createServer(async function(req,res) {
                 let conversation = conversations.find(conv=>(!conv.locked && !conv.usedInPlaces.has(query.placeId)))
                 if (conversation) {
                     try {
-                        console.log(conversation)
+                        //console.log(conversation)
                         conversation.locked=true
                         await setupConversation(conversation,slotsRequested)
                         //spin the gamejoin api until it works!!
